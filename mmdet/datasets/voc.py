@@ -9,12 +9,17 @@ from .xml_style import XMLDataset
 
 @DATASETS.register_module()
 class VOCDataset(XMLDataset):
+    #CLASSES = ('aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car',
+    #          'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse',
+    #          'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train',
+    #          'tvmonitor')
+    CLASSES = ('airplane', 'airport', 'baseballfield', 'basketballcourt',
+            'bridge', 'chimney', 'dam', 'Expressway-Service-area',
+            'Expressway-toll-station', 'golffield', 'groundtrackfield',
+            'harbor', 'overpass', 'ship', 'stadium', 'storagetank',
+            'tenniscourt', 'trainstation', 'vehicle', 'windmill')
 
-    CLASSES = ('aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car',
-               'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse',
-               'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train',
-               'tvmonitor')
-
+              
     def __init__(self, **kwargs):
         super(VOCDataset, self).__init__(**kwargs)
         if 'VOC2007' in self.img_prefix:

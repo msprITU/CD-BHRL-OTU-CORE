@@ -4,9 +4,9 @@ import os.path as osp
 import tempfile
 import warnings
 from collections import OrderedDict
-import json
 
 import mmcv
+import math
 import numpy as np
 from mmcv.utils import print_log
 from terminaltables import AsciiTable
@@ -19,7 +19,7 @@ from .custom import CustomDataset
 
 import copy
 import random
-
+import time
 
 def find_nth(string, substring, n):
 	"""Searches substring in the string.
@@ -33,31 +33,43 @@ def find_nth(string, substring, n):
 	else:
 		return string.find(substring, find_nth(string, substring, n - 1) + 1)
 
+def calculate_iou(box1, box2):
+    # Extract coordinates of the bounding boxes
+    x1_1, y1_1, x2_1, y2_1 = box1[:-1]
+    x1_2, y1_2, x2_2, y2_2 = box2[:-1]
+
+    # Calculate the area of each bounding box
+    area_box1 = (x2_1 - x1_1) * (y2_1 - y1_1)
+    area_box2 = (x2_2 - x1_2) * (y2_2 - y1_2)
+
+    # Calculate the coordinates of the intersection rectangle
+    x_intersection = max(0, min(x2_1, x2_2) - max(x1_1, x1_2))
+    y_intersection = max(0, min(y2_1, y2_2) - max(y1_1, y1_2))
+
+    # Calculate the area of intersection
+    area_intersection = x_intersection * y_intersection
+
+    # Calculate the union area
+    area_union = area_box1 + area_box2 - area_intersection
+
+    # Calculate the IoU
+    iou = area_intersection / area_union
+
+    return iou
+
 
 @DATASETS.register_module()
 class OneShotVOCDataset(CustomDataset):
-    SED_PARAMETER_CLASSES = ("aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor")
-    CLASSES = SED_PARAMETER_CLASSES
-
-    """dataset_name = "DIOR"
-    match dataset_name: # YKH
-      case "COCO": # YKH
-        CLASSES = ('aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car',
-                  'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse',
-                  'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train',
-                  'tvmonitor')
-      case "DIOR": # YKH DIOR
-        CLASSES = ('airplane', 'airport', 'baseballfield', 'basketballcourt',
-                  'bridge', 'chimney', 'dam', 'Expressway-Service-area',
-                  'Expressway-toll-station', 'golffield', 'groundtrackfield',
-                  'harbor', 'overpass', 'ship', 'stadium', 'storagetank',
-                  'tenniscourt', 'trainstation', 'vehicle', 'windmill')
-
-      case "ArToxOr": # YKH ArToxOr
-        CLASSES = ('Araneae', 'Coleoptera', 'Diptera', 'Hemiptera', 'Hymenoptera', 'Lepidoptera', 'Odonata')
-        falseCLASSES = ('Diptera','Hymenoptera','Lepidoptera')
-      case "UODD": # YKH UODD
-        CLASSES = ('0B','1B','2B')"""
+    if False:
+      CLASSES = ('aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car',
+                'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse',
+                'motorbike', 'person', 'pottedplant', 'sheep', 'sofa', 'train',
+                'tvmonitor')
+    CLASSES = ('airplane', 'airport', 'baseballfield', 'basketballcourt',
+        'bridge', 'chimney', 'dam', 'Expressway-Service-area',
+        'Expressway-toll-station', 'golffield', 'groundtrackfield',
+        'harbor', 'overpass', 'ship', 'stadium', 'storagetank',
+        'tenniscourt', 'trainstation', 'vehicle', 'windmill')
 
     def __init__(self,
                  ann_file,
@@ -68,18 +80,13 @@ class OneShotVOCDataset(CustomDataset):
                  proposal_file=None,
                  test_mode=False,
                  test_seen_classes=False,
-                 position=None, 
+                 position=0,
                  requested_class=None):
-        
-        #self.split = [int(requested_class)]
-        #self.split = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
-        #self.split = [1, 2, 3] # UODD YKH
-        SED_PARAMETER_SELF_SPLIT = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
-        self.split = SED_PARAMETER_SELF_SPLIT
-        #self.split = [1, 2, 3, 4, 5, 6, 7] # ArToxOr YKH
-        #self.split = [1,8,10,17]
+        self.split = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+        #self.split=[]
         self.test_seen_classes = test_seen_classes
-        self.position = position
+        #self.test_seen_classes = False
+        self.position = 0
         classes = None 
         super(OneShotVOCDataset,
               self).__init__(ann_file, pipeline, classes, data_root, img_prefix,
@@ -101,11 +108,14 @@ class OneShotVOCDataset(CustomDataset):
         for i in range(len(self.cat_ids)):
             if (i + 1) in self.split:
                 self.test_cat.append(self.cat_ids[i])
+                #self.train_cat.append(self.cat_ids[i])
             else:
                 self.train_cat.append(self.cat_ids[i])
         if self.test_seen_classes:
             self.test_cat = self.train_cat
+
         self.train_cat = self.test_cat
+
 
     def generate_infos(self):
         img_infos = []
@@ -259,43 +269,105 @@ class OneShotVOCDataset(CustomDataset):
         img_id = self.data_infos[idx]['id']
         rf_ids = self.coco.getAnnIds(catIds=[cate], iscrowd=False)
 
-        # VOC
-        # rf_anns = self.coco.loadAnns(int(self.position))[0]
+        random.seed(img_id)
+        l = list(range(len(rf_ids)))
+        random.shuffle(l)
 
-        # VOT
-        #position = 0
+        position = 0
         #position = idx
-        
-        # #en son bu kullanıldı -> NORMAL TESTLER
-        #position = 0
-        # YKH --------
-        SED_PARAMETER_POSITION_MULTIPLIER = 4
-        SED_PARAMETER_FINAL_ITERATION_NUMBER = 5
-        position = int((len(rf_ids)-1)/SED_PARAMETER_FINAL_ITERATION_NUMBER)*SED_PARAMETER_POSITION_MULTIPLIER
-        #     --------
-        # ref = rf_ids[position]
-
-        ################
-        # # gerçek bhrl tsti
-        # f = open("/root/BHRL/vot_results/real_bhrl_voc_eval_pretrained_voc_model/run_num.txt", "r")
-        # lines = f.readlines()
-        # random.seed(int(lines[0]))
-        # l = list(range(len(rf_ids)))
-        # random.shuffle(l)
-
-        # position = l[self.position % len(l)]
-        # print("position = ", position)
-
-        ########################################################33
         ref = rf_ids[position]
-
-        ###############
 
         rf_anns = self.coco.loadAnns(ref)[0]
         rf_img_info['ann'] = rf_anns
         rf_img_info['file_name'] = self.coco.loadImgs(rf_anns['image_id'])[0]['file_name']
         rf_img_info['img_info'] = self.coco.loadImgs(rf_anns['image_id'])[0]
-        print("REFERENCE INFO: FILENAME=", rf_img_info['file_name'], " GT_ID=", ref)
+
+        seq = rf_img_info['file_name'][find_nth(rf_img_info['file_name'], "/", 7) + 1 : find_nth(rf_img_info['file_name'], "/", 8)]
+        seq = seq[:seq.find("_")]
+
+        if idx >= 50:
+            with open("/root/BHRL/vot_results/target_update_studies/real_time/e100_IoU_0_7_aug/updates/updates_{}.txt". format(seq), "r") as f_updates:
+                lines = f_updates.readlines()
+            f_updates.close()
+            last_second_line = lines[-1].strip()
+            integer_list = [float(element) for element in last_second_line.split(",")]
+
+        elif idx == 49:
+            dets = np.load("/root/BHRL/vot_results/target_update_studies/real_time/e100_IoU_0_7_aug/preds/{}.npy". format(seq))
+            last_det = dets[-1]
+            x = last_det[0]
+            y = last_det[1]
+            w = last_det[2] - last_det[0]
+            h = last_det[3] - last_det[1]
+            f_updates = open("/root/BHRL/vot_results/target_update_studies/real_time/e100_IoU_0_7_aug/updates/updates_{}.txt". format(seq), "a")
+            f_updates.write(str(49)  + "," + str(x) + "," + str(y) + "," + str(w) + "," + str(h) + "\n")
+            f_updates.close()
+            with open("/root/BHRL/vot_results/target_update_studies/real_time/e100_IoU_0_7_aug/updates/updates_{}.txt". format(seq), "r") as f_updates:
+                lines = f_updates.readlines()
+            f_updates.close()
+            last_second_line = lines[-1].strip()
+            integer_list = [float(element) for element in last_second_line.split(",")]
+        
+        if not ((idx+1) % 50):
+            max_retries = 3  # You can adjust the number of retries
+            retry_count = 0
+
+            while retry_count < max_retries:
+                try:
+                    dets = np.load("/root/BHRL/vot_results/target_update_studies/real_time/e100_IoU_0_7_aug/preds/{}.npy". format(seq))
+                    break
+                except:
+                    retry_count += 1
+                    if retry_count < max_retries:
+                        print(f"Retrying in 5 seconds... (Attempt {retry_count}/{max_retries})")
+                        time.sleep(5)
+                    else:
+                        print("Max retries reached. Operation failed.")
+
+            last_det = dets[-1]
+            dets = dets[-50:]
+            sorted_indices = sorted(range(len(dets)), key=lambda i: dets[i][4], reverse=True)
+            best_idx = sorted_indices[0]
+            best_det = dets[best_idx]
+            iou = calculate_iou(last_det, best_det)
+
+            if (best_det[4] > 0.85) and (iou > 0.7):
+                x = best_det[0]
+                y = best_det[1]
+                w = best_det[2] - best_det[0]
+                h = best_det[3] - best_det[1]
+                f = open("/root/BHRL/vot_results/target_update_studies/real_time/e100_IoU_0_7_aug/observer/observer_{}.txt". format(seq), "a")
+                f.write(str(idx+1) + "," + str(x) + "," + str(y) + "," + str(w) + "," + str(h) + "," + str(best_det[4]) + "," + str(w*h) + "," + str(best_idx+1) + "\n")
+                f.close()
+                rf_img_info["ann"]['bbox'] = [x,y,w,h]
+                rf_img_info["ann"]['area'] = w*h
+                ref = rf_ids[best_idx + ( 50 * math.floor((idx/50)) ) ]
+                rf_anns = self.coco.loadAnns(ref)[0]
+                rf_img_info["ann"]['file_name'] = self.coco.loadImgs(rf_anns['image_id'])[0]['file_name']
+                rf_img_info['file_name'] = self.coco.loadImgs(rf_anns['image_id'])[0]['file_name']
+                rf_img_info['img_info'] = self.coco.loadImgs(rf_anns['image_id'])[0]
+                f_updates = open("/root/BHRL/vot_results/target_update_studies/real_time/e100_IoU_0_7_aug/updates/updates_{}.txt". format(seq), "a")
+                f_updates.write(str(best_idx + ( 50 * math.floor((idx/50))))  + "," + str(x) + "," + str(y) + "," + str(w) + "," + str(h) + "\n")
+                f_updates.close()
+            else:
+                pos = integer_list[0]
+                ref = rf_ids[int(pos)]
+                rf_anns = self.coco.loadAnns(ref)[0]
+                rf_img_info["ann"]['file_name'] = self.coco.loadImgs(rf_anns['image_id'])[0]['file_name']
+                rf_img_info['file_name'] = self.coco.loadImgs(rf_anns['image_id'])[0]['file_name']
+                rf_img_info['img_info'] = self.coco.loadImgs(rf_anns['image_id'])[0]
+                rf_img_info["ann"]['bbox'] = [integer_list[1],integer_list[2],integer_list[3],integer_list[4]]
+                rf_img_info["ann"]['area'] = integer_list[3]*integer_list[4]
+
+        elif (idx >= 50) and ((idx+1) % 50):
+            pos = integer_list[0]
+            ref = rf_ids[int(pos)]
+            rf_anns = self.coco.loadAnns(ref)[0]
+            rf_img_info["ann"]['file_name'] = self.coco.loadImgs(rf_anns['image_id'])[0]['file_name']
+            rf_img_info['file_name'] = self.coco.loadImgs(rf_anns['image_id'])[0]['file_name']
+            rf_img_info['img_info'] = self.coco.loadImgs(rf_anns['image_id'])[0]
+            rf_img_info["ann"]['bbox'] = [integer_list[1],integer_list[2],integer_list[3],integer_list[4]]
+            rf_img_info["ann"]['area'] = integer_list[3]*integer_list[4]
 
         return rf_img_info
 

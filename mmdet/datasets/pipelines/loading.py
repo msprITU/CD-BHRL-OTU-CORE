@@ -367,8 +367,8 @@ class LoadAnnotations:
                 return None
         if self.with_label:
             results = self._load_labels(results)
-        if self.with_mask:
-            results = self._load_masks(results)
+        #if self.with_mask: YKH
+        #    results = self._load_masks(results)
         if self.with_seg:
             results = self._load_semantic_seg(results)
         return results

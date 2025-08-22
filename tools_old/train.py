@@ -93,19 +93,19 @@ def main():
 
     cfg = Config.fromfile(args.config)
 
-    #cfg.data.train.ann_file = "/content/drive/MyDrive/BHRL/vot_annotation/ft/{}_first_ft.json". format(args.seq_name)
-    #cfg.work_dir = "/content/drive/MyDrive/BHRL/work_dirs/vot/BHRL/first_images_seperate/{}".format(args.seq_name)
+    #cfg.data.train.ann_file = "/root/BHRL/vot_annotation/ft/{}_first_ft.json". format(args.seq_name)
+    #cfg.work_dir = "/root/BHRL/work_dirs/vot/BHRL/first_images_seperate/{}".format(args.seq_name)
 
-    # if not os.path.exists("/content/drive/MyDrive/BHRL/work_dirs/VOC/{}/all_instances". format(args.seq_name)):
-    #     os.mkdir("/content/drive/MyDrive/BHRL/work_dirs/VOC/{}/all_instances". format(args.seq_name))
+    # if not os.path.exists("/root/BHRL/work_dirs/VOC/{}/all_instances". format(args.seq_name)):
+    #     os.mkdir("/root/BHRL/work_dirs/VOC/{}/all_instances". format(args.seq_name))
 
-    # cfg.data.train.ann_file = "/content/drive/MyDrive/BHRL/work_dirs/VOC/{}/ann/{}.json". format(args.seq_name, str(args.seq_img_id).zfill(6))
-    # cfg.data.train.ann_file = "/content/drive/MyDrive/BHRL/data/VOCdevkit/voc_annotation/voc_test.json"
+    # cfg.data.train.ann_file = "/root/BHRL/work_dirs/VOC/{}/ann/{}.json". format(args.seq_name, str(args.seq_img_id).zfill(6))
+    # cfg.data.train.ann_file = "/root/BHRL/data/VOCdevkit/voc_annotation/voc_test.json"
 
-    #cfg.data.train.ann_file = "/content/drive/MyDrive/BHRL/vot_annotation/ft/{}_first_ft.json". format(args.seq_name)
+    #cfg.data.train.ann_file = "/root/BHRL/vot_annotation/ft/{}_first_ft.json". format(args.seq_name)
     cfg.data.train.ann_file = args.ann_file
 
-    #cfg.work_dir = "/content/drive/MyDrive/BHRL/work_dirs/vot/BHRL/first_images_seperate/{}". format(args.seq_name)
+    #cfg.work_dir = "/root/BHRL/work_dirs/vot/BHRL/first_images_seperate/{}". format(args.seq_name)
     cfg.work_dir = args.work_dir
     cfg.data.train.requested_class = args.requested_class
 

@@ -24,7 +24,7 @@ from mmdet.models import build_detector
 from mmdet.apis import inference_detector, init_detector, show_result_pyplot
 from mmdet.apis import single_gpu_test
 import numpy as np
-# from metrics import accuracy_metric
+from metrics import accuracy_metric
 from torchvision.utils import save_image
 
 
@@ -40,8 +40,8 @@ def multi_gpu_test(model, data_loader, tmpdir=None, seq=None, part=None, result_
         prog_bar = mmcv.ProgressBar(len(dataset))
 
 
-    # if not os.path.exists("/content/drive/MyDrive/BHRL/oscda/{}_refs". format(seq,seq)):
-    #     os.makedirs("/content/drive/MyDrive/BHRL/oscda/{}_refs". format(seq, seq))
+    # if not os.path.exists("/root/BHRL/oscda/{}_refs". format(seq,seq)):
+    #     os.makedirs("/root/BHRL/oscda/{}_refs". format(seq, seq))
 
     if not os.path.exists(result_file):
         os.makedirs(result_file)
@@ -49,14 +49,14 @@ def multi_gpu_test(model, data_loader, tmpdir=None, seq=None, part=None, result_
 
     #dets = []
     #f = open(result_file, "a")
-    # f = open("/content/drive/MyDrive/BHRL/vot_results/real_bhrl_voc_eval_pretrained_voc_model/results/{}/results_{}_part_{}_run_num_{}.txt". format(seq, seq, part, run_num), "a")
-    # f_candidate = open("/content/drive/MyDrive/BHRL/vot_results/real_bhrl_voc_eval_pretrained_voc_model/results/{}/all_candidates_{}_part_{}_run_num_{}.txt". format(seq, seq, part, run_num), "a")
+    # f = open("/root/BHRL/vot_results/real_bhrl_voc_eval_pretrained_voc_model/results/{}/results_{}_part_{}_run_num_{}.txt". format(seq, seq, part, run_num), "a")
+    # f_candidate = open("/root/BHRL/vot_results/real_bhrl_voc_eval_pretrained_voc_model/results/{}/all_candidates_{}_part_{}_run_num_{}.txt". format(seq, seq, part, run_num), "a")
 
-    f = open(os.path.join(result_file, "results_{}_part_{}.txt". format(seq, part)), "a")
-    f_candidate = open(os.path.join(result_file, "all_candidates_{}_part_{}.txt". format(seq, part)), "a")
+    f = open(os.path.join(result_file, "results_{}_part_{}.txt". format(seq, seq, part)), "a")
+    f_candidate = open(os.path.join(result_file, "all_candidates_{}_part_{}.txt". format(seq, seq, part)), "a")
     for i, data in enumerate(data_loader):
         #img1 = data["img"][0][1][0] 
-        #save_image(img1, "/content/drive/MyDrive/BHRL/vot_results/real_bhrl_voc_eval_pretrained_voc_model/vis_refs/{}". format(os.path.split(data['img_metas'][0].data[0][0]['img_info']['filename'])[-1].replace("jpg", "png")))
+        #save_image(img1, "/root/BHRL/vot_results/real_bhrl_voc_eval_pretrained_voc_model/vis_refs/{}". format(os.path.split(data['img_metas'][0].data[0][0]['img_info']['filename'])[-1].replace("jpg", "png")))
         with torch.no_grad():
             result = model(return_loss=False, rescale=True, **data)
 
@@ -73,11 +73,11 @@ def multi_gpu_test(model, data_loader, tmpdir=None, seq=None, part=None, result_
             #dets.append([i] + res)
             results.extend(result)
 
-        # img = cv2.imread(os.path.join("/content/drive/MyDrive/BHRL/data/VOT/person4_imgs", data['img_metas'][0].data[0][0]['img_info']['filename']))
+        # img = cv2.imread(os.path.join("/root/BHRL/data/VOT/person4_imgs", data['img_metas'][0].data[0][0]['img_info']['filename']))
         # img = cv2.rectangle(img, (int(res[0]), int(res[1])), (int(res[2]), int(res[3])), (0,0,255), 2)
-        # cv2.imwrite("/content/drive/MyDrive/BHRL/vot_results/target_update_studies/real_time/e100_IoU_0_7_aug/results/person4/{}". format(os.path.split(data['img_metas'][0].data[0][0]['img_info']['filename'])[-1]), img)
+        # cv2.imwrite("/root/BHRL/vot_results/target_update_studies/real_time/e100_IoU_0_7_aug/results/person4/{}". format(os.path.split(data['img_metas'][0].data[0][0]['img_info']['filename'])[-1]), img)
 
-            #np.save("/content/drive/MyDrive/BHRL/vot_results/e100_target_first_frame/preds/{}_part_{}.txt". format(seq, part), dets)
+            #np.save("/root/BHRL/vot_results/e100_target_first_frame/preds/{}_part_{}.txt". format(seq, part), dets)
 
             img_id = data['img_metas'][0].data[0][0]['img_info']['id']
             label = data['img_metas'][0].data[0][0]['label']
@@ -153,16 +153,16 @@ def collect_results_id(result_part, size, img_ids_part, img_labels_part, tmpdir=
 
 def parse_args():
     parser = argparse.ArgumentParser(description='BHRL test detector')
-    parser.add_argument('--config', default="/content/drive/MyDrive/BHRL/configs/vot/BHRL.py")
-    parser.add_argument('--seq_name', default="ballet")
-    parser.add_argument('--part', help='the class_name', default=1)
+    parser.add_argument('--config', help='test config file path', default="configs/vot/BHRL.py")
+    parser.add_argument('--seq_name', help='the class_name')
+    parser.add_argument('--part', help='the class_name')
     parser.add_argument('--result', help='the result file')
-    parser.add_argument('--ann_file', default="/content/drive/MyDrive/BHRL/vot_annotation/ballet/vot_ballet_test.json")
+    parser.add_argument('--ann_file', default=None, help='the class_name')
     #parser.add_argument('--requested_class', help='the class_name')
     #parser.add_argument('--instance_id', help='the class_name')
-    parser.add_argument('--run_num', default=1)
-    parser.add_argument('--result_file',  default='/content/drive/MyDrive/BHRL/vot_results/ballet')
-    parser.add_argument('--checkpoint', help='checkpoint file', default="/content/drive/MyDrive/BHRL/work_dirs/vot/BHRL/first_images_seperate/ballet/epoch_109.pth")
+    parser.add_argument('--run_num', default=None, help='the class_name')
+    parser.add_argument('--result_file', default=None, help='the class_name')
+    parser.add_argument('--checkpoint', help='checkpoint file', default="checkpoints/model_split3.pth")
     parser.add_argument('--out', default="vot_results.pkl", help='output result file')
     parser.add_argument(
         '--json_out',
@@ -206,8 +206,8 @@ def main():
 
     cfg = mmcv.Config.fromfile(args.config)
 
-    #cfg.data.test.ann_file = "/content/drive/MyDrive/BHRL/vot_annotation/{}/vot_{}_test.json". format(args.seq_name, args.seq_name)
-    #cfg.data.test.ann_file = "/content/drive/MyDrive/BHRL/data/VOCdevkit/voc_annotation/voc_test.json"
+    #cfg.data.test.ann_file = "/root/BHRL/vot_annotation/{}/vot_{}_test.json". format(args.seq_name, args.seq_name)
+    #cfg.data.test.ann_file = "/root/BHRL/data/VOCdevkit/voc_annotation/voc_test.json"
     #cfg.data.test.requested_class = args.requested_class
     cfg.data.test.ann_file = args.ann_file
 
@@ -267,8 +267,6 @@ def main():
             broadcast_buffers=False)
         
         ann_file = cfg.data.test.ann_file
-        print("dataloader adslkofjasdkldfjklqasdjklf")
-        print(len(data_loader))
         outputs, img_ids, img_labels = multi_gpu_test(model, data_loader, args.tmpdir, seq=args.seq_name, part = args.part, result_file = args.result_file, run_num=args.run_num)
 
         rank, _ = get_dist_info()
